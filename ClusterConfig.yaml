@@ -1,9 +1,14 @@
 #Configuration of Cluster includes node Id and node IP address
-#serverNodes:
+# serverNodes:
 #nodeId:ipAddress
-172.17.0.1: 
+# 172.17.0.1: 
+#   port: 6388
+localtest1:
+  ip: 127.0.1.1
+  port: 6387
+localtest2:
+  ip: 127.0.1.1
   port: 6388
-172.17.0.2:
-  port: 6388
-127.0.1.1:
-  port: 6388
+localtest3:
+  ip: -
+  port: 6386

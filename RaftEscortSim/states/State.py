@@ -1,10 +1,15 @@
+from RaftEscortSim.nodes.ServerNode import Node
+
+
+ELECTION_TIMEOUT=500
 class State():
     '''
     Class Summary:
         Responsibale for behaviour logic of the nodes,while ServerNode class in charge of network config initializtion
     '''
-    def __init__(ServerNode):
-        pass
+    def __init__(self,node:Node,election_timeout=ELECTION_TIMEOUT):
+        self.node=node
+        self.election_timeout=election_timeout
     def persistent():
         '''
         Each server persists the following to stable storage
@@ -19,7 +24,14 @@ class State():
         log entries
         '''
         pass
-    def handle_recv_RPC():
+    def handle_message(self,msg):
+        if msg.type=="vote_request":
+            self.handle_vote_request(msg)
+        if msg.type=="apend_entries_request":
+            pass
+    def handle_vote_request(self,msg):
         pass
-    def send_RPC():
+    def handle_append_entries_request(self,msg):
+        pass
+    def send_vote_request(self):
         pass
