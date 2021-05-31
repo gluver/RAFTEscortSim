@@ -22,7 +22,7 @@ class Follower(State):
                 for i in range(self.node.commit_length,leaderCommit-1):
                     pass
                     ### Todo deliver log[i].msg to the application
-
+            self.node.commit_length=leaderCommit
 
 
 if __name__=="__main__":
