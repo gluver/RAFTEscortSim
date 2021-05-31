@@ -10,5 +10,5 @@ localtest2:
   ip: 127.0.1.1
   port: 6388
 localtest3:
-  ip: -
+  ip: 127.0.1.1
   port: 6386

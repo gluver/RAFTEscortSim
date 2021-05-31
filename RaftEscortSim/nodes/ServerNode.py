@@ -1,14 +1,16 @@
+from RaftEscortSim.log.Log import LogEntity
 import os
 import threading
 import time
 import random
 import pickle
-from typing import ContextManager
+from typing import List
 import zmq
 import socket 
 import yaml
 from RaftEscortSim.states import Candidate,Follower,Leader
 from RaftEscortSim.messages import BaseMessage,LogRP,LogRQ,VoteRequestRQ,VoteResponseRP
+import queue
 
 DICT_ROLE={0:'follower',1:'candidate',3:'leader'}
 ELETION_TIMEOUT=150
@@ -47,15 +49,20 @@ class Node():
         self.ip=self.get_host_ip()
         # self.port=self.cluster_config[self.ip]['port']
         # self.node_id=f'{self.ip}:{self.port}'###Todo:use ip:port as id
+        self.queue=queue.Queue()
         self.node_id=name
         self.port=self.cluster_config[name]['port']
         self.current_term=0
         self.state=Follower.Follower(self) ### init as follower
-        self.log=[] ### Todo: Check if in disk_dir has presisted log
+        self.state_str="Follower"
+        self.log:List[LogEntity]=[] ### Todo: Check if in disk_dir has presisted log
         self.election_timeout=random.randint(ELETION_TIMEOUT,ELETION_TIMEOUT*2)
+        self.current_leader=None
         self.coordianter=None
         self.commit_length=0
         self.vote_for=None
+        self.votes_received=[]
+        self.last_term=None
         self.neighbours=self.get_neighbours()
         self.logdir=logdir
         if self.check_log_file_exist():### Find if there is a log file in current node for detecting preceeding crash
@@ -91,8 +98,11 @@ class Node():
                 socket.setsockopt(zmq.SUBSCRIBE,b'')
                 while True:
                     message=socket.recv_pyobj()
-                    # self.state.handle_message(message)
-                    print(f'{self.node_id} recived {type(message)}') ##
+                    if message:
+                        self.state.handle_message(message)
+                        print(f'{self.node_id} recived {type(message)}') ##
+                    else:
+                        self.housekeeping()
                     ##Todo invoke state message handle message
                     
                 print(f"{self.node_id}")
@@ -103,11 +113,13 @@ class Node():
                 socket.bind(f"tcp://{self.ip}:{self.port}")
                 print(f"Publisher socket on {self.node_id} binded tcp://{self.ip}:{self.port}")
                 while True:
-                    message= BaseMessage.BaseMessage(1)##Todo: get messenge or rcp from state 
-                    if message:
-                        print(f'{self.node_id} sending msg ....')
-                        socket.send_pyobj(message)
-                        time.sleep(2)
+                    # self.queue.put(BaseMessage.BaseMessage(self.node_id))
+                    if self.queue.qsize() !=0:
+                        message= self.queue.get()##Todo: get messenge or rcp from state 
+                        if message:
+                            print(f'{self.node_id} sending msg ....')
+                            socket.send_pyobj(message)
+                            time.sleep(1)
                        
                     
         self.subscriber_thread=SubscriberThread()
@@ -118,6 +130,7 @@ class Node():
         self.publisher_thread.start()
         # self.publisher_thread.join()
         # self.subscriber_thread.join()
+
     def recover(self):###ToDo Define Object for presist,figure out when to dump the Object file 
         '''
         load logfile: in logfile : currentTerm, votedFor ,log, and commitLength
@@ -128,13 +141,24 @@ class Node():
             self.vote_for=data.vote_for
             self.log=data.log
             self.commit_length=data.commit_length
-        
- 
 
+    def housekeeping(self):
+        now=time.time()
+        print(now)
+    def change_state(self,target_state):
+        if target_state=='Follower':
+            self.state_str='Follower'
+            self.state=Follower.Follower(self)
+        elif target_state=='Candidate':
+            self.state_str='Cnadidate'
+            self.state=Candidate.Candidate(self)
+        elif target_state=='Leader':
+            self.state=Leader.Leader(self)
+            self.state='Leader'
 if __name__=="__main__":
     ###Test code
-    with open(CONFIG_FILE,'r') as file:
-        a=yaml.load(file, Loader=yaml.FullLoader)
+    # with open(CONFIG_FILE,'r') as file:
+    #     a=yaml.load(file, Loader=yaml.FullLoader)
         # print(a,a.items())
     node=Node('localtest1')
     node1=Node('localtest2')
