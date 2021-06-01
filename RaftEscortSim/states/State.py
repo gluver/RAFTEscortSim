@@ -5,7 +5,7 @@ from RaftEscortSim.messages.BaseMessage import BaseMessage
 # from RaftEscortSim.nodes.ServerNode import Node
 from RaftEscortSim.messages.VoteRequestRQ import VoteRequestRQ
 import time,random
-ELECTION_TIMEOUT=1000 #ms
+ELECTION_TIMEOUT=5000 #ms
 class State():
     '''
     Class Summary:
@@ -53,7 +53,7 @@ class State():
         ''''''
         pass
     def handle_log_request(self, msg:LogRQ):
-        print(f"{msg.f_id} handling {msg.type},node coordinates in last log:{msg.entries[-1].node_coordinates} from {msg.senderId}, ")
+        # print(f"{msg.f_id} handling {msg.type} from {msg.senderId}, ")
         if msg.f_id==self.node.node_id:
             if msg.l_term>self.node.current_term:
                 self.node.current_term=msg.l_term

@@ -102,7 +102,7 @@ class Node():
                 for neighbour_id,neighbour_info in self.neighbours:
                     socket.connect(f"tcp://{neighbour_info['ip']}:{neighbour_info['port']}")
                     print(f"Subscriber socket on {self.node_id} connected tcp://{neighbour_info['ip']}:{neighbour_info['port']}")
-                print("\n\n")
+
                 socket.setsockopt(zmq.SUBSCRIBE,b'')
                 while True:
                     message=socket.recv_pyobj()
@@ -123,7 +123,6 @@ class Node():
                 socket=context.socket(zmq.PUB)
                 socket.bind(f"tcp://{self.ip}:{self.port}")
                 print(f"Publisher socket on {self.node_id} binded tcp://{self.ip}:{self.port}")
-                print("\n\n")
                 time.sleep(1)
                 while True:
                     # self.queue.put(BaseMessage.BaseMessage(self.node_id))
@@ -169,15 +168,18 @@ class Node():
         now=time.time()
         time.sleep(2)
         self.dump()
+        print(f"Node coordinates {self.log[-1].node_coordinates}")
         # print(now-self.last_update,self.state.election_timeout,now-self.last_update>self.state.election_timeout)
         if self.state_str=='Leader':
+            self.state.update_coordinate()
             self.state.broadcast()
         if self.state_str=='Follower' and now-self.last_update>self.state.election_timeout:
-            print(f"Timeout got no heartbeat on node {self.node_id},call election ,Term{self.current_term+1}")
+            print(f"Timeout got no heartbeat on node {self.node_id},call election,CurrentTerm{self.current_term+1}")
             self.state.call_election()
         if self.state_str=='Candidate'and now-self.last_update>self.state.election_timeout:
-            print(f"Eelection timeout got no result on node {self.node_id},call election again,Term{self.current_term+1}")
+            print(f"Timeout got no election result on node {self.node_id},call election,CurrentTerm {self.current_term+1}")
             self.state.call_election()
+
     def change_state(self,target_state):
         if target_state=='Follower':
             self.state_str='Follower'
