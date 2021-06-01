@@ -56,7 +56,8 @@ class Node():
         self.state=Follower.Follower(self) ### init as follower
         self.state_str="Follower"
         self.log:List[LogEntity]=[] ### Todo: Check if in disk_dir has presisted log
-        init_entity=LogEntity(self.current_term)
+        init_entity=LogEntity(1)
+        # init_entity=LogEntity(self.current_term)
         for n in self.cluster_config.keys():
             init_entity.node_coordinates[n]=(random.uniform(-200,200),random.uniform(-200,200))
         self.log.append(init_entity)
@@ -169,4 +170,4 @@ if __name__=="__main__":
     node1=Node('localtest2')
     node3=Node('localtest3')
     node.state.call_election()
-    print(node.state.election_timeout,node.state.votes_received)
+   

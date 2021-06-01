@@ -5,7 +5,7 @@ class LogRQ(BaseMessage):
     l_term:leader current term
     '''
     def __init__(self,leaderId , l_term, log_len, log_term,l_commitlen, entries,f_id):
-        super.__init__(leaderId)
+        super().__init__(leaderId)
         self.l_term=l_term
         self.log_len=log_len
         self.log_term=log_term

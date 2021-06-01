@@ -67,6 +67,7 @@ class State():
         ''''''
         pass
     def handle_log_request(self, msg:LogRQ):
+        print(f"{msg.f_id} handling {msg.type},node coordinates in last log:{msg.entries[-1].node_coordinates} from {msg.senderId}, ")
         if msg.f_id==self.node.node_id:
             if msg.l_term>self.node.current_term:
                 self.node.current_term=msg.l_term
