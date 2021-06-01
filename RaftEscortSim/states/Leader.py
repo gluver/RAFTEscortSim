@@ -1,3 +1,4 @@
+from RaftEscortSim.coordinator.Coordinator import Coordinator
 from RaftEscortSim.messages.LogRP import LogRP
 from RaftEscortSim.messages.LogRQ import LogRQ
 from RaftEscortSim.log.Log import LogEntity
@@ -34,12 +35,14 @@ class Leader(State):
             return len([n for n in self.sentLength.keys() if self.sentLength[n]>=ack_len])
         minAcks=(len(self.node.neighbours)+1)/2
         ready=[i for i in range(1,(len(self.node.log)+1)) if acks(i)>=minAcks]
-        print(len(ready) != 0,max(ready) > self.node.commit_length,self.node.log[max(ready)-1].term==self.node.current_term)
+        # print(len(ready) != 0,max(ready) > self.node.commit_length,self.node.log[max(ready)-1].term==self.node.current_term)
         if len(ready) != 0 and max(ready) > self.node.commit_length and \
             self.node.log[max(ready)-1].term==self.node.current_term:
             for i in range(self.node.commit_length,max(ready)):
                 ###deliver log[i].msg to the application
-                print(f"{i} passed to client")
+                # print(f"{i} passed to client")
+                pass
+            
             self.node.commit_length=max(ready)
 
     def replicate_log(self,follower_id):
@@ -55,7 +58,14 @@ class Leader(State):
         print(f"{self.node.node_id} replicating_log to followers ,Current Term {self.node.current_term}")
         for neighbour_id,neighbour_info in self.node.neighbours:
             self.replicate_log(neighbour_id)
-        
+        self.update_coordinate()
 
+    def update_coordinate(self):
+        print(f"Current:leader{self.node.node_id}")
+        coordinator=Coordinator(self.node.node_id) 
+        new_coordin=coordinator.move_flag(self.node.log[-1].node_coordinates)
+        new_entity=LogEntity(self.node.current_term)
+        new_entity.node_coordinates=new_coordin
+        self.node.log.append(new_entity)
 if __name__=="__main__":
     f=Leader()

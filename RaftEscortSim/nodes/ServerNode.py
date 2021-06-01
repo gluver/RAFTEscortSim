@@ -12,7 +12,7 @@ from RaftEscortSim.states import Candidate,Follower,Leader
 from RaftEscortSim.messages import BaseMessage,LogRP,LogRQ,VoteRequestRQ,VoteResponseRP
 import queue
 import sys 
-DICT_ROLE={0:'follower',1:'candidate',3:'leader'}
+random.seed(1234)
 ELETION_TIMEOUT=150
 LOG_DIR=f'./{sys.argv[1]}.sav'
 CONFIG_FILE=os.path.join('.','ClusterConfig.yaml')###***Todo: Should configure out path
@@ -60,6 +60,7 @@ class Node():
         init_entity=LogEntity(self.current_term)
         for n in self.cluster_config.keys():
             init_entity.node_coordinates[n]=(random.uniform(-200,200),random.uniform(-200,200))
+        init_entity.node_coordinates['flag']=(0,0)
         self.log.append(init_entity)
         self.election_timeout=random.randint(ELETION_TIMEOUT,ELETION_TIMEOUT*2)
         self.current_leader=None
@@ -101,6 +102,7 @@ class Node():
                 for neighbour_id,neighbour_info in self.neighbours:
                     socket.connect(f"tcp://{neighbour_info['ip']}:{neighbour_info['port']}")
                     print(f"Subscriber socket on {self.node_id} connected tcp://{neighbour_info['ip']}:{neighbour_info['port']}")
+                print("\n\n")
                 socket.setsockopt(zmq.SUBSCRIBE,b'')
                 while True:
                     message=socket.recv_pyobj()
@@ -108,7 +110,8 @@ class Node():
                         self.state.handle_message(message)
                         if self.state_str=="Follower" and message.type=="LogRQ":
                             self.last_update=time.time()
-                            print(f"Log request recved, last_update time updated")
+                            # print(f"Log request recved, last_update time updated")
+                        
                         # print(f'{self.node_id} recived {type(message)}') ##
                     
                     ##Todo invoke state message handle message
@@ -120,6 +123,7 @@ class Node():
                 socket=context.socket(zmq.PUB)
                 socket.bind(f"tcp://{self.ip}:{self.port}")
                 print(f"Publisher socket on {self.node_id} binded tcp://{self.ip}:{self.port}")
+                print("\n\n")
                 time.sleep(1)
                 while True:
                     # self.queue.put(BaseMessage.BaseMessage(self.node_id))
@@ -159,7 +163,7 @@ class Node():
         data['commit_length']=self.commit_length
         with open(self.logdir,'wb') as file:
             pickle.dump(data,file)
-        print(f"Node state saved in {self.logdir}")
+        # print(f"Node state saved in {self.logdir}")
 
     def housekeeping(self):
         now=time.time()
@@ -189,10 +193,7 @@ if __name__=="__main__":
     # with open(CONFIG_FILE,'r') as file:
     #     a=yaml.load(file, Loader=yaml.FullLoader)
         # print(a,a.items())
-    print(sys.argv[1])
     node=Node(sys.argv[1])
-    node.dump()
-    node.recover()
     # node1=Node('localtest2')
     # node3=Node('localtest3')
     # node.state.call_election()
