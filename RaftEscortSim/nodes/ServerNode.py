@@ -14,7 +14,7 @@ import queue
 import sys 
 DICT_ROLE={0:'follower',1:'candidate',3:'leader'}
 ELETION_TIMEOUT=150
-LOG_DIR='./RAFTEscort.logc'
+LOG_DIR=f'./{sys.argv[1]}.sav'
 CONFIG_FILE=os.path.join('.','ClusterConfig.yaml')###***Todo: Should configure out path
 class Node():
     '''
@@ -142,9 +142,8 @@ class Node():
         # self.subscriber_thread.join()
 
     def recover(self):###ToDo Define Object for presist,figure out when to dump the Object file 
-        '''
-        load logfile: in logfile : currentTerm, votedFor ,log, and commitLength
-        '''
+        
+        print(f"Loading dumped save file {self.logdir} ")
         with open(self.logdir,'rb') as file:
             data=pickle.load(file)
             self.current_term=data['current_term']
@@ -152,10 +151,21 @@ class Node():
             self.log=data['log']
             self.commit_length=data['commit_length']
 
+    def dump(self):
+        data=dict()
+        data['current_term']=self.current_term
+        data['vote_for']=self.vote_for
+        data['log']=self.log
+        data['commit_length']=self.commit_length
+        with open(self.logdir,'wb') as file:
+            pickle.dump(data,file)
+        print(f"Node state saved in {self.logdir}")
+
     def housekeeping(self):
         now=time.time()
         time.sleep(2)
-        print(now-self.last_update,self.state.election_timeout,now-self.last_update>self.state.election_timeout)
+        self.dump()
+        # print(now-self.last_update,self.state.election_timeout,now-self.last_update>self.state.election_timeout)
         if self.state_str=='Leader':
             self.state.broadcast()
         if self.state_str=='Follower' and now-self.last_update>self.state.election_timeout:
@@ -181,6 +191,8 @@ if __name__=="__main__":
         # print(a,a.items())
     print(sys.argv[1])
     node=Node(sys.argv[1])
+    node.dump()
+    node.recover()
     # node1=Node('localtest2')
     # node3=Node('localtest3')
     # node.state.call_election()
