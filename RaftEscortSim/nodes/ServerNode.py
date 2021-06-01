@@ -11,7 +11,7 @@ import yaml
 from RaftEscortSim.states import Candidate,Follower,Leader
 from RaftEscortSim.messages import BaseMessage,LogRP,LogRQ,VoteRequestRQ,VoteResponseRP
 import queue
-
+import sys 
 DICT_ROLE={0:'follower',1:'candidate',3:'leader'}
 ELETION_TIMEOUT=150
 LOG_DIR='./RAFTEscort.logc'
@@ -56,8 +56,8 @@ class Node():
         self.state=Follower.Follower(self) ### init as follower
         self.state_str="Follower"
         self.log:List[LogEntity]=[] ### Todo: Check if in disk_dir has presisted log
-        init_entity=LogEntity(1)
-        # init_entity=LogEntity(self.current_term)
+        # init_entity=LogEntity(1)
+        init_entity=LogEntity(self.current_term)
         for n in self.cluster_config.keys():
             init_entity.node_coordinates[n]=(random.uniform(-200,200),random.uniform(-200,200))
         self.log.append(init_entity)
@@ -68,6 +68,7 @@ class Node():
         self.vote_for=None
         self.votes_received=[]
         self.last_term=None
+        self.last_update=time.time()
         self.neighbours=self.get_neighbours()
         self.logdir=logdir
         if self.check_log_file_exist():### Find if there is a log file in current node for detecting preceeding crash
@@ -105,9 +106,11 @@ class Node():
                     message=socket.recv_pyobj()
                     if message:
                         self.state.handle_message(message)
+                        if self.state_str=="Follower" and message.type=="LogRQ":
+                            self.last_update=time.time()
+                            print(f"Log request recved, last_update time updated")
                         # print(f'{self.node_id} recived {type(message)}') ##
-                    else:
-                        self.housekeeping()
+                    
                     ##Todo invoke state message handle message
                     
                 print(f"{self.node_id}")
@@ -117,15 +120,16 @@ class Node():
                 socket=context.socket(zmq.PUB)
                 socket.bind(f"tcp://{self.ip}:{self.port}")
                 print(f"Publisher socket on {self.node_id} binded tcp://{self.ip}:{self.port}")
+                time.sleep(1)
                 while True:
-                    time.sleep(1)
                     # self.queue.put(BaseMessage.BaseMessage(self.node_id))
                     if self.queue.qsize() !=0:
                         message= self.queue.get()##Todo: get messenge or rcp from state 
                         if message:
                             # print(f'{self.node_id} sending msg ....')
                             socket.send_pyobj(message)
-                            
+                    else:
+                        self.housekeeping()        
                        
                     
         self.subscriber_thread=SubscriberThread()
@@ -143,14 +147,23 @@ class Node():
         '''
         with open(self.logdir,'rb') as file:
             data=pickle.load(file)
-            self.current_term=data.current_term
-            self.vote_for=data.vote_for
-            self.log=data.log
-            self.commit_length=data.commit_length
+            self.current_term=data['current_term']
+            self.vote_for=data['vote_for']
+            self.log=data['log']
+            self.commit_length=data['commit_length']
 
     def housekeeping(self):
         now=time.time()
-        print(now)
+        time.sleep(2)
+        print(now-self.last_update,self.state.election_timeout,now-self.last_update>self.state.election_timeout)
+        if self.state_str=='Leader':
+            self.state.broadcast()
+        if self.state_str=='Follower' and now-self.last_update>self.state.election_timeout:
+            print(f"Timeout got no heartbeat on node {self.node_id},call election ,Term{self.current_term+1}")
+            self.state.call_election()
+        if self.state_str=='Candidate'and now-self.last_update>self.state.election_timeout:
+            print(f"Eelection timeout got no result on node {self.node_id},call election again,Term{self.current_term+1}")
+            self.state.call_election()
     def change_state(self,target_state):
         if target_state=='Follower':
             self.state_str='Follower'
@@ -166,8 +179,8 @@ if __name__=="__main__":
     # with open(CONFIG_FILE,'r') as file:
     #     a=yaml.load(file, Loader=yaml.FullLoader)
         # print(a,a.items())
-    node=Node('localtest1')
-    node1=Node('localtest2')
-    node3=Node('localtest3')
-    node.state.call_election()
-   
+    print(sys.argv[1])
+    node=Node(sys.argv[1])
+    # node1=Node('localtest2')
+    # node3=Node('localtest3')
+    # node.state.call_election()

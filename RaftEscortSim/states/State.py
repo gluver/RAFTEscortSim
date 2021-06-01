@@ -4,17 +4,17 @@ from RaftEscortSim.messages.VoteResponseRP import VoteRequestRP
 from RaftEscortSim.messages.BaseMessage import BaseMessage
 # from RaftEscortSim.nodes.ServerNode import Node
 from RaftEscortSim.messages.VoteRequestRQ import VoteRequestRQ
-
-ELECTION_TIMEOUT=500
+import time,random
+ELECTION_TIMEOUT=1000 #ms
 class State():
     '''
     Class Summary:
         Responsibale for behaviour logic of the nodes,while ServerNode class in charge of network config initializtion
     '''
-    def __init__(self,node,election_timeout=ELECTION_TIMEOUT):
+    def __init__(self,node):
         self.node=node
-        self.election_timeout=election_timeout
-
+        self.election_timeout=random.uniform(ELECTION_TIMEOUT,ELECTION_TIMEOUT*2)/1000
+        
     def persistent():
         '''
         Each server persists the following to stable storage
@@ -48,7 +48,7 @@ class State():
             (msg.c_lastterm==my_logterm and msg.c_loglen>=len(self.node.log))
         term_ok=(msg.c_term>self.node.current_term) or \
             (msg.c_term==self.node.current_term and \
-                (self.node.votedfor==None or self.node.vote_for==msg.c_id))
+                (self.node.vote_for==None or self.node.vote_for==msg.c_id))
         if log_ok and term_ok:
             self.node.current_term=msg.c_term
             if self.node.state_str !='Follower':
@@ -101,7 +101,9 @@ class State():
             msg=VoteRequestRQ(self.node.node_id,self.node.current_term,
             len(self.node.log),self.node.last_term)
             self.node.queue.put(msg)
-        self.node.change_state('Candidate')
-        #ToDo: Start election timer
+        if self.node.state_str=="Follower":
+            self.node.change_state('Candidate')
+        self.node.last_update=time.time()
+
 
     
