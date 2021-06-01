@@ -1,16 +1,18 @@
+from RaftEscortSim.messages.LogRP import LogRP
+from RaftEscortSim.messages.LogRQ import LogRQ
 from RaftEscortSim.log.Log import LogEntity
 from typing import List
 from RaftEscortSim.messages.VoteResponseRP import VoteRequestRP
 from RaftEscortSim.messages.VoteRequestRQ import VoteRequestRQ
-from RaftEscortSim.nodes.ServerNode import Node # remove after 
+# from RaftEscortSim.nodes.ServerNode import Node # remove after 
 from RaftEscortSim.states.State import State
 
 
 class Follower(State):
-    def __init__(self,node:Node):
+    def __init__(self,node):
         super().__init__(node)
-    def handle_log_request(self, msg:VoteRequestRQ):
-        pass
+   
+
     def append_entiries(self,logLength, leaderCommit, entries:List[LogEntity]):
         if len(entries)>0 and len(self.node.log)>logLength:
             if self.node.log[logLength].term != entries[0].term:

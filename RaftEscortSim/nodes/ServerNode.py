@@ -56,6 +56,10 @@ class Node():
         self.state=Follower.Follower(self) ### init as follower
         self.state_str="Follower"
         self.log:List[LogEntity]=[] ### Todo: Check if in disk_dir has presisted log
+        init_entity=LogEntity(self.current_term)
+        for n in self.cluster_config.keys():
+            init_entity.node_coordinates[n]=(random.uniform(-200,200),random.uniform(-200,200))
+        self.log.append(init_entity)
         self.election_timeout=random.randint(ELETION_TIMEOUT,ELETION_TIMEOUT*2)
         self.current_leader=None
         self.coordianter=None
@@ -100,7 +104,7 @@ class Node():
                     message=socket.recv_pyobj()
                     if message:
                         self.state.handle_message(message)
-                        print(f'{self.node_id} recived {type(message)}') ##
+                        # print(f'{self.node_id} recived {type(message)}') ##
                     else:
                         self.housekeeping()
                     ##Todo invoke state message handle message
@@ -113,13 +117,14 @@ class Node():
                 socket.bind(f"tcp://{self.ip}:{self.port}")
                 print(f"Publisher socket on {self.node_id} binded tcp://{self.ip}:{self.port}")
                 while True:
+                    time.sleep(1)
                     # self.queue.put(BaseMessage.BaseMessage(self.node_id))
                     if self.queue.qsize() !=0:
                         message= self.queue.get()##Todo: get messenge or rcp from state 
                         if message:
-                            print(f'{self.node_id} sending msg ....')
+                            # print(f'{self.node_id} sending msg ....')
                             socket.send_pyobj(message)
-                            time.sleep(1)
+                            
                        
                     
         self.subscriber_thread=SubscriberThread()
@@ -150,11 +155,11 @@ class Node():
             self.state_str='Follower'
             self.state=Follower.Follower(self)
         elif target_state=='Candidate':
-            self.state_str='Cnadidate'
+            self.state_str='Candidate'
             self.state=Candidate.Candidate(self)
         elif target_state=='Leader':
             self.state=Leader.Leader(self)
-            self.state='Leader'
+            self.state_str='Leader'
 if __name__=="__main__":
     ###Test code
     # with open(CONFIG_FILE,'r') as file:
@@ -163,4 +168,5 @@ if __name__=="__main__":
     node=Node('localtest1')
     node1=Node('localtest2')
     node3=Node('localtest3')
-    print(node.state.election_timeout,node.state)
+    node.state.call_election()
+    print(node.state.election_timeout,node.state.votes_received)

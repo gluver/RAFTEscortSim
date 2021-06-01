@@ -5,7 +5,8 @@ from RaftEscortSim.states.State import State
 
 class Leader(State):
     def __init__(self,node):
-        super().__init__(node)    
+        super().__init__(node)
+        print(f"{self.node.node_id} become leader, Term {self.node.current_leader}")    
         self.sentLength=dict()
         self.ackedLength=dict()
         for neighbour_id,neighbour_info in self.node.neighbours:

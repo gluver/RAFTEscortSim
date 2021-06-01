@@ -1,5 +1,4 @@
 class LogEntity():
-    def __init__(self,term,index):
+    def __init__(self,term):
         self.term=term
-        self.index=index
         self.node_coordinates=dict()
