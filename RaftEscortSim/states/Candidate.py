@@ -1,6 +1,6 @@
 from RaftEscortSim.messages.VoteResponseRP import VoteRequestRP
 from RaftEscortSim.states.State import State
-
+import time
 
 class Candidate(State):
     def __init__(self,node):
@@ -15,6 +15,7 @@ class Candidate(State):
                 self.votes_received.append(msg.v_id)
             if len(self.votes_received)>=(len(self.node.neighbours)+1)/2:
                 self.node.current_leader=self.node.node_id
+                self.node.last_update=time.time()
                 self.node.change_state('Leader')
                 #Todo:cancel election timer
                 #replicate code in note ,now move to Leader __init__() 
